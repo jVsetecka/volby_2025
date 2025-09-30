@@ -13,7 +13,7 @@
 
 ### Features
 #### Core
-- Zobrazení celkových výsledků - bar chart, pie chart - zobrazení trendu oproti poslednímu přičtení výsledků
+- Zobrazení celkových výsledků - bar chart, pie chart 
 - Absolutní celkový počet
 - Zobrazení kolik % je sečteno
 - Rozdělení mandátů - ideálně v grafu lavic
@@ -21,3 +21,4 @@
 #### Ostatní
 - Mapa krajů
 - Porovnání s minulými volbami
+- Zobrazení trendu oproti poslednímu přičtení výsledků

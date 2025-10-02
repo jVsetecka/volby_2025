@@ -1,32 +1,53 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
-
 import {setGlobalOptions} from "firebase-functions";
 import {onRequest} from "firebase-functions/https";
 import * as logger from "firebase-functions/logger";
+import express from "express";
+import cors from "cors";
+import * as xml from "xml2js";
+import { createResults } from "./models/results";
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
-
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
 setGlobalOptions({maxInstances: 10});
 
 export const helloWorld = onRequest((request, response) => {
   logger.info("Hello logs!", {structuredData: true});
   response.send("Hello from Firebase!");
 });
+
+const app = express();
+app.use(cors({origin: true}));
+app.use(express.json());
+
+app.get("/results", async (req, res) => {
+  try {
+    // Replace with your actual XML URL
+    const xmlUrl = "https://www.volby.cz/appdata/ps2025/odata/vysledky.xml";
+    
+    const xmlResponse = await fetch(xmlUrl);
+    
+    if (!xmlResponse.ok) {
+      throw new Error(`Failed to fetch XML: ${xmlResponse.status}`);
+    }
+    
+    const xmlData = await xmlResponse.text();
+
+    const parser = new xml.Parser({
+      explicitArray: false,
+      ignoreAttrs: false,
+      mergeAttrs: true,
+      trim: true,
+    });
+
+    const jsonData = await parser.parseStringPromise(xmlData);
+    const results = createResults(jsonData);
+    
+    res.send(results);
+  } catch (error) {
+    logger.error("Error fetching results:", error);
+    res.status(500).json({
+      error: "Failed to fetch results",
+      message: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
+export const api = onRequest(app);
